@@ -161,7 +161,7 @@
       <div class="big" id="sumAmount"></div>
       <dl id="sumList" style="margin-top:12px"></dl>
     </div>
-    <div class="note" style="padding:0 4px">Sau khi gửi, đề nghị sẽ được chuyển cho người duyệt trên Telegram. Hãy chắc chắn thông tin và số tài khoản đúng.</div>
+    <div class="note" style="padding:0 4px">Sau khi gửi, lệnh chi được đăng vào group Telegram và kế toán được tag để chi. Hãy chắc chắn thông tin và số tài khoản đúng.</div>
   </div>
 
   <!-- BƯỚC 3: XONG -->
@@ -170,7 +170,7 @@
       <div class="tick">✅</div>
       <div>Đã gửi đề nghị</div>
       <div class="cp" id="doneCp"></div>
-      <div class="note">Người duyệt đã nhận thông báo trên Telegram.</div>
+      <div class="note">Lệnh chi đã được đăng vào group Telegram, kế toán đã được tag.</div>
       <p><a id="doneFolder" href="#" class="hide">Mở thư mục chứng từ</a></p>
       <p><button id="again" type="button" style="border:0;background:var(--btn);color:var(--btn-fg);border-radius:12px;padding:12px 20px;font:inherit;font-weight:600">Báo khoản khác</button></p>
     </div>
@@ -192,7 +192,7 @@
   var tg = window.Telegram && window.Telegram.WebApp;
   if (tg) { tg.ready(); tg.expand(); }
   var INIT = tg ? tg.initData : '';
-  var CONTRACT_MIN = 5000000;          // chỉ để nhắc; n8n mới là nơi kiểm tra chính thức
+  var CONTRACT_MIN = 5000000;          // chỉ để nhắc (từ mức này trở lên cần hợp đồng); n8n ghi sổ
   var MAX_TOTAL_B64 = 3900000;         // giới hạn body Vercel ~4.5MB
   var KIND_LABEL = { hopdong: 'Hợp đồng / bill', cccd: 'CCCD', stk: 'Ảnh STK' };
 
@@ -416,8 +416,8 @@
     else { h.textContent = 'Cần 12 số (CCCD) hoặc 10/13 số (MST)'; h.className = 'hintline bad'; }
     var hasContract = state.files.some(function (f) { return f.kind === 'hopdong'; });
     var cn = $('contractNote');
-    if (a > CONTRACT_MIN) {
-      cn.textContent = hasContract ? 'Đã có hợp đồng/chứng từ.' : 'Khoản trên ' + fmtMoney(CONTRACT_MIN) + 'đ cần đính kèm hợp đồng.';
+    if (a >= CONTRACT_MIN) {
+      cn.textContent = hasContract ? 'Đã có hợp đồng/chứng từ.' : 'Từ ' + fmtMoney(CONTRACT_MIN) + 'đ trở lên cần hợp đồng. Nếu chưa có, sổ sẽ ghi "Cần bổ sung hợp đồng", bạn gửi bổ sung sau cũng được.';
       cn.style.color = hasContract ? 'var(--ok)' : 'var(--warn)';
     } else { cn.textContent = 'Đính kèm hợp đồng, bill, CCCD, ảnh STK nếu có.'; cn.style.color = ''; }
   }
@@ -438,9 +438,6 @@
     if (!o.ben_nhan) return 'Nhập người nhận / công ty';
     if (o.cccd_mst && [10, 12, 13].indexOf(o.cccd_mst.length) < 0) return 'CCCD phải 12 số, MST 10 hoặc 13 số';
     if (o.hinh_thuc === 'CK' && (!o.stk || !o.ngan_hang)) return 'Chuyển khoản cần số tài khoản và ngân hàng';
-    if (o.so_tien > CONTRACT_MIN && !state.files.some(function (f) { return f.kind === 'hopdong'; })) {
-      return 'Khoản trên ' + fmtMoney(CONTRACT_MIN) + 'đ cần đính kèm hợp đồng';
-    }
     var total = state.files.reduce(function (s, f) { return s + f.dataUrl.length; }, 0);
     if (total > MAX_TOTAL_B64) return 'Tổng dung lượng file quá lớn, hãy bớt file';
     return '';
@@ -477,6 +474,7 @@
     if (o.hinh_thuc === 'CK') { row(dl, 'STK', o.stk); row(dl, 'Ngân hàng', o.ngan_hang); }
     var kinds = {};
     state.files.forEach(function (f) { kinds[KIND_LABEL[f.kind]] = (kinds[KIND_LABEL[f.kind]] || 0) + 1; });
+    if (o.so_tien >= CONTRACT_MIN && !o.so_hop_dong && !state.files.some(function (f) { return f.kind === 'hopdong'; })) row(dl, 'Lưu ý', 'Chưa có hợp đồng, sổ sẽ ghi "Cần bổ sung hợp đồng"');
     row(dl, 'Đính kèm', Object.keys(kinds).map(function (k) { return k + ' ×' + kinds[k]; }).join(', ') || 'Không có');
   }
 
