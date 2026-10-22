@@ -613,7 +613,7 @@
     state.files.forEach(function (f) { kinds[KIND_LABEL[f.kind]] = (kinds[KIND_LABEL[f.kind]] || 0) + 1; });
     if (!isArc() && o.so_tien >= CONTRACT_MIN && !o.so_hop_dong && !state.files.some(function (f) { return f.kind === 'hopdong'; })) row(dl, 'Lưu ý', 'Chưa có hợp đồng, sổ sẽ ghi "Cần bổ sung hợp đồng"');
     $('sumNote').textContent = isArc()
-      ? 'Chứng từ được ghi thẳng vào sổ với trạng thái "Lưu trữ" và lưu vào Drive, không đăng vào group.'
+      ? 'Chứng từ được ghi thẳng vào sổ với trạng thái "Lưu trữ" và lưu vào Drive theo tháng của ngày chứng từ (tháng cũ chưa có folder thì tự tạo), không đăng vào group.'
       : 'Sau khi gửi, lệnh chi được đăng vào group Telegram và kế toán được tag để chi. Hãy chắc chắn thông tin và số tài khoản đúng.';
     row(dl, 'Đính kèm', Object.keys(kinds).map(function (k) { return k + ' ×' + kinds[k]; }).join(', ') || 'Không có');
   }
