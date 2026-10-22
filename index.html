@@ -77,23 +77,42 @@
   .busy div { background: var(--bg); padding: 16px 22px; border-radius: 12px; font-size: 14px; }
   .hide { display: none !important; }
   input[type=file] { display: none; }
+  .menu button { display: block; width: 100%; text-align: left; border: 0; background: var(--bg); color: var(--fg); border-radius: 14px; padding: 16px; margin-bottom: 12px; font: inherit; }
+  .menu button b { display: block; font-size: 17px; margin-bottom: 4px; }
+  .menu button span { color: var(--hint); font-size: 13px; }
+  .menu button .ico { font-size: 26px; display: block; margin-bottom: 6px; }
+  .back { border: 0; background: transparent; color: var(--link); font: inherit; padding: 0 0 6px; }
 </style>
 </head>
 <body>
 <div class="wrap">
-  <h1 id="title">Báo chi phí</h1>
+  <button id="btnHome" type="button" class="back hide">‹ Menu</button>
+  <h1 id="title">Chứng từ chi phí</h1>
   <div id="error" class="err hide"></div>
 
+  <!-- MÀN HÌNH ĐẦU -->
+  <div id="stepHome" class="menu">
+    <button type="button" id="pickCreate"><span class="ico">🧾</span><b>Tạo lệnh chi</b><span>Đề nghị chi tiền. Lệnh chi được đăng vào group, kế toán và giám đốc tài chính được tag.</span></button>
+    <button type="button" id="pickArchive"><span class="ico">🗂️</span><b>Lưu trữ chứng từ</b><span>Khoản đã chi hoặc chứng từ cần lưu. Ghi thẳng vào sổ và Drive, không đăng group.</span></button>
+  </div>
+
   <!-- BƯỚC 1: FORM -->
-  <div id="stepForm">
+  <div id="stepForm" class="hide">
+    <div class="card hide" id="archiveBox">
+      <h2>Thông tin lưu trữ</h2>
+      <label for="ngay">Ngày chứng từ / ngày chi</label>
+      <input id="ngay" type="date">
+      <label for="ghi_chu">Ghi chú (nếu có)</label>
+      <textarea id="ghi_chu" placeholder="VD: Chứng từ chi tháng 9, đã chuyển khoản trước đó"></textarea>
+    </div>
     <div class="card">
-      <h2>Quét ảnh tự điền</h2>
+      <h2>Quét tự điền</h2>
       <div class="scan">
-        <button id="scanBank" type="button">🏦 Ảnh STK / QR ngân hàng</button>
+        <button id="scanBank" type="button">🏦 STK / QR / giấy báo CK</button>
         <button id="scanBill" type="button">🧾 Bill / hóa đơn</button>
         <button id="scanCccd" type="button">🪪 CCCD</button>
       </div>
-      <div class="note">Chụp hoặc chọn ảnh, hệ thống đọc và điền Người nhận / Công ty, CCCD / MST, STK… Luôn kiểm tra lại trước khi gửi.</div>
+      <div class="note">Chụp hoặc chọn ảnh, PDF hoặc file Word (.docx). Nút ngân hàng đọc được cả giấy báo / chứng từ chuyển khoản (lấy người thụ hưởng, tài khoản có, ngân hàng, số tiền, ngày). Hệ thống đọc và điền Người nhận / Công ty, CCCD / MST, STK… Luôn kiểm tra lại trước khi gửi.</div>
       <div id="warns" class="warns"></div>
     </div>
 
@@ -150,6 +169,7 @@
         <button type="button" class="addfile" data-kind="hopdong">+ Hợp đồng / bill</button>
         <button type="button" class="addfile" data-kind="cccd">+ CCCD</button>
         <button type="button" class="addfile" data-kind="stk">+ Ảnh STK</button>
+        <button type="button" class="addfile" data-kind="khac">+ Chứng từ khác</button>
       </div>
     </div>
   </div>
@@ -161,18 +181,18 @@
       <div class="big" id="sumAmount"></div>
       <dl id="sumList" style="margin-top:12px"></dl>
     </div>
-    <div class="note" style="padding:0 4px">Sau khi gửi, lệnh chi được đăng vào group Telegram và kế toán được tag để chi. Hãy chắc chắn thông tin và số tài khoản đúng.</div>
+    <div class="note" style="padding:0 4px" id="sumNote"></div>
   </div>
 
   <!-- BƯỚC 3: XONG -->
   <div id="stepDone" class="hide">
     <div class="card done">
       <div class="tick">✅</div>
-      <div>Đã gửi đề nghị</div>
+      <div id="doneTitle">Đã gửi đề nghị</div>
       <div class="cp" id="doneCp"></div>
-      <div class="note">Lệnh chi đã được đăng vào group Telegram, kế toán đã được tag.</div>
+      <div class="note" id="doneNote"></div>
       <p><a id="doneFolder" href="#" class="hide">Mở thư mục chứng từ</a></p>
-      <p><button id="again" type="button" style="border:0;background:var(--btn);color:var(--btn-fg);border-radius:12px;padding:12px 20px;font:inherit;font-weight:600">Báo khoản khác</button></p>
+      <p><button id="again" type="button" style="border:0;background:var(--btn);color:var(--btn-fg);border-radius:12px;padding:12px 20px;font:inherit;font-weight:600">Quay về menu</button></p>
     </div>
   </div>
 </div>
@@ -184,8 +204,8 @@
   </div>
 </div>
 <div class="busy" id="busy"><div id="busyText">Đang xử lý…</div></div>
-<input type="file" id="pickScan" accept="image/*">
-<input type="file" id="pickAdd" accept="image/*,application/pdf" multiple>
+<input type="file" id="pickScan" accept="image/*,application/pdf,.pdf,.docx,.doc">
+<input type="file" id="pickAdd" accept="image/*,application/pdf,.pdf,.docx,.doc" multiple>
 
 <script>
 (function () {
@@ -194,11 +214,17 @@
   var INIT = tg ? tg.initData : '';
   var CONTRACT_MIN = 5000000;          // chỉ để nhắc (từ mức này trở lên cần hợp đồng); n8n ghi sổ
   var MAX_TOTAL_B64 = 3900000;         // giới hạn body Vercel ~4.5MB
-  var KIND_LABEL = { hopdong: 'Hợp đồng / bill', cccd: 'CCCD', stk: 'Ảnh STK' };
+  var KIND_LABEL = { hopdong: 'Hợp đồng / bill', cccd: 'CCCD', stk: 'Ảnh STK', khac: 'Chứng từ khác' };
+  var PDFJS = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+  var PDFJS_WORKER = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  var JSZIP = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+  var MAX_FILE = 2500000;
 
   var $ = function (id) { return document.getElementById(id); };
-  var state = { hinh_thuc: 'CK', files: [], dirty: {}, step: 'form' };
-  var FIELDS = ['loai', 'noi_dung', 'so_tien', 'so_hop_dong', 'ben_nhan', 'cccd_mst', 'stk', 'ngan_hang'];
+  var state = { mode: '', hinh_thuc: 'CK', files: [], dirty: {}, step: 'home' };
+  var FIELDS = ['loai', 'noi_dung', 'so_tien', 'so_hop_dong', 'ben_nhan', 'cccd_mst', 'stk', 'ngan_hang', 'ghi_chu'];
+  function isArc() { return state.mode === 'archive'; }
+  function todayIso() { var d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
 
   // ---------- tiện ích ----------
   function showError(msg) {
@@ -272,6 +298,81 @@
     });
   }
 
+  // ---------- PDF / Word ----------
+  function ext(f) { var m = /\.([A-Za-z0-9]+)$/.exec(f.name || ''); return m ? m[1].toLowerCase() : ''; }
+  function fileMime(f) {
+    var e = ext(f), t = f.type || '';
+    if (t === 'application/pdf' || e === 'pdf') return 'application/pdf';
+    if (e === 'docx') return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+    if (e === 'doc') return 'application/msword';
+    return t || 'image/jpeg';
+  }
+  function isDoc(m) { return m === 'application/pdf' || m.indexOf('wordprocessingml') >= 0 || m === 'application/msword'; }
+  function docLabel(m) { return m === 'application/pdf' ? 'PDF' : 'DOC'; }
+  var libs = {};
+  function loadScript(url) {
+    if (libs[url]) return libs[url];
+    libs[url] = new Promise(function (res, rej) {
+      var sc = document.createElement('script');
+      sc.src = url; sc.onload = res; sc.onerror = function () { rej(new Error('Không tải được thư viện đọc file, kiểm tra mạng')); };
+      document.head.appendChild(sc);
+    });
+    return libs[url];
+  }
+  function readBuffer(file) {
+    return new Promise(function (res, rej) {
+      var r = new FileReader();
+      r.onload = function () { res(r.result); };
+      r.onerror = function () { rej(new Error('Không đọc được file')); };
+      r.readAsArrayBuffer(file);
+    });
+  }
+  async function pdfExtract(file) {
+    await loadScript(PDFJS);
+    var lib = window.pdfjsLib;
+    lib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER;
+    var pdf = await lib.getDocument({ data: new Uint8Array(await readBuffer(file)) }).promise;
+    var out = [], n = Math.min(pdf.numPages, 3);
+    for (var p = 1; p <= n; p++) {
+      var page = await pdf.getPage(p), tc = await page.getTextContent(), rows = [];
+      tc.items.forEach(function (it) {
+        if (!it.str || !it.str.trim()) return;
+        var y = it.transform[5], x = it.transform[4], row = null;
+        for (var i = 0; i < rows.length; i++) { if (Math.abs(rows[i].y - y) < 3) { row = rows[i]; break; } }
+        if (!row) { row = { y: y, items: [] }; rows.push(row); }
+        row.items.push({ x: x, s: it.str });
+      });
+      rows.sort(function (a, b) { return b.y - a.y; });
+      rows.forEach(function (r) {
+        r.items.sort(function (a, b) { return a.x - b.x; });
+        out.push(r.items.map(function (i) { return i.s; }).join(' ').replace(/ +/g, ' ').trim());
+      });
+    }
+    return { text: out.join('\n'), pdf: pdf };
+  }
+  async function pdfToJpeg(pdf, limitB64) {
+    var page = await pdf.getPage(1), vp = page.getViewport({ scale: 1 });
+    var scale = Math.min(2.2, 1800 / Math.max(vp.width, vp.height));
+    var v = page.getViewport({ scale: scale }), c = document.createElement('canvas');
+    c.width = Math.round(v.width); c.height = Math.round(v.height);
+    var ctx = c.getContext('2d'); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height);
+    await page.render({ canvasContext: ctx, viewport: v }).promise;
+    var q = 0.8, out = c.toDataURL('image/jpeg', q);
+    while (out.length > limitB64 && q > 0.4) { q -= 0.1; out = c.toDataURL('image/jpeg', q); }
+    return out;
+  }
+  async function docxText(file) {
+    await loadScript(JSZIP);
+    var zip = await window.JSZip.loadAsync(await readBuffer(file));
+    var entry = zip.file('word/document.xml');
+    if (!entry) throw new Error('File Word không hợp lệ');
+    var xml = await entry.async('string');
+    xml = xml.replace(/<\/w:p>/g, '\n').replace(/<\/w:tc>/g, ' ').replace(/<w:tab\/>/g, ' ').replace(/<w:br\/>/g, '\n').replace(/<[^>]+>/g, '');
+    var ta = document.createElement('textarea');
+    ta.innerHTML = xml;
+    return ta.value.split('\n').map(function (l) { return l.replace(/ +/g, ' ').trim(); }).filter(Boolean).join('\n');
+  }
+
   // ---------- gọi API ----------
   async function api(path, body) {
     var r = await fetch('/api/n8n?path=' + path, {
@@ -299,19 +400,35 @@
   $('pickScan').onchange = async function (ev) {
     var f = ev.target.files && ev.target.files[0];
     if (!f) return;
-    var kind = scanKind;
+    var kind = scanKind, mime = fileMime(f);
+    var attachKind = kind === 'bank' ? 'stk' : kind === 'cccd' ? 'cccd' : 'hopdong';
     showError('');
-    busy(true, 'Đang đọc ảnh…');
+    busy(true, 'Đang đọc file…');
     try {
-      var dataUrl = await compress(f, 900000, 1800);   // OCR.space free: ≤ 1MB
-      var res = await api('expense-ocr', { kind: kind, image: dataUrl });
+      if (mime === 'application/msword') throw new Error('File .doc cũ chưa đọc được, hãy lưu thành .docx hoặc PDF rồi chọn lại');
+      var res, attach = null;
+      if (mime === 'application/pdf') {
+        var px = await pdfExtract(f);
+        if (px.text.replace(/\s/g, '').length >= 40) {
+          res = await api('expense-ocr', { kind: kind, text: px.text });
+        } else {
+          res = await api('expense-ocr', { kind: kind, image: await pdfToJpeg(px.pdf, 900000) });
+        }
+        if (f.size <= MAX_FILE) attach = { data: await fileToDataUrl(f), mime: mime };
+      } else if (mime.indexOf('wordprocessingml') >= 0) {
+        var t = await docxText(f);
+        if (t.replace(/\s/g, '').length < 10) throw new Error('File Word không có chữ để đọc');
+        res = await api('expense-ocr', { kind: kind, text: t });
+        if (f.size <= MAX_FILE) attach = { data: await fileToDataUrl(f), mime: mime };
+      } else {
+        var dataUrl = await compress(f, 900000, 1800);   // OCR.space free: ≤ 1MB
+        res = await api('expense-ocr', { kind: kind, image: dataUrl });
+        attach = { data: await compress(f, 600000, 1400), mime: 'image/jpeg' };
+      }
       applyOcr(res);
-      // đính kèm luôn ảnh đã quét làm chứng từ
-      var attachKind = kind === 'bank' ? 'stk' : kind === 'cccd' ? 'cccd' : 'hopdong';
-      var small = await compress(f, 600000, 1400);
-      addFile(attachKind, small, 'image/jpeg', f.name);
+      if (attach) addFile(attachKind, attach.data, attach.mime, f.name);
     } catch (e) {
-      showError('Quét ảnh lỗi: ' + e.message + '. Bạn có thể nhập tay.');
+      showError('Quét lỗi: ' + e.message + '. Bạn có thể nhập tay.');
     } finally { busy(false); }
   };
 
@@ -329,6 +446,7 @@
     ['ben_nhan', 'cccd_mst', 'so_tien', 'so_hop_dong', 'stk', 'ngan_hang'].forEach(function (k) {
       if (setField(k, f[k])) n++;
     });
+    if (isArc() && f.ngay && !$('ngay').dataset.touched) { $('ngay').value = f.ngay; n++; }
     if ((f.stk || f.ngan_hang) && state.hinh_thuc !== 'CK') setHinhThuc('CK');
     var w = $('warns'); w.innerHTML = '';
     (res.warnings || []).forEach(function (t) { var d = document.createElement('div'); d.textContent = '⚠ ' + t; w.appendChild(d); });
@@ -347,10 +465,10 @@
     showError(''); busy(true, 'Đang xử lý file…');
     try {
       for (var i = 0; i < list.length; i++) {
-        var f = list[i];
-        if (f.type === 'application/pdf') {
-          if (f.size > 2500000) { showError('PDF "' + f.name + '" quá lớn (tối đa ~2.5MB)'); continue; }
-          addFile(addKind, await fileToDataUrl(f), 'application/pdf', f.name);
+        var f = list[i], mime = fileMime(f);
+        if (isDoc(mime)) {
+          if (f.size > MAX_FILE) { showError('File "' + f.name + '" quá lớn (tối đa ~2.5MB)'); continue; }
+          addFile(addKind, await fileToDataUrl(f), mime, f.name);
         } else {
           addFile(addKind, await compress(f, 600000, 1400), 'image/jpeg', f.name);
         }
@@ -367,10 +485,10 @@
       var row = document.createElement('div'); row.className = 'f';
       var th;
       if (f.mime.indexOf('image') === 0) { th = document.createElement('img'); th.src = f.dataUrl; }
-      else { th = document.createElement('div'); th.className = 'ic'; th.textContent = 'PDF'; }
+      else { th = document.createElement('div'); th.className = 'ic'; th.textContent = docLabel(f.mime); }
       var nm = document.createElement('div'); nm.className = 'nm';
       var b = document.createElement('b'); b.textContent = f.name;
-      var s = document.createElement('span'); s.textContent = KIND_LABEL[f.kind] + ' · ' + Math.round(f.dataUrl.length * 0.75 / 1024) + ' KB';
+      var s = document.createElement('span'); s.textContent = (KIND_LABEL[f.kind] || f.kind) + ' · ' + Math.round(f.dataUrl.length * 0.75 / 1024) + ' KB';
       nm.appendChild(b); nm.appendChild(s);
       var x = document.createElement('button'); x.type = 'button'; x.textContent = '×';
       x.onclick = function () { state.files.splice(i, 1); renderFiles(); refreshHints(); };
@@ -416,7 +534,8 @@
     else { h.textContent = 'Cần 12 số (CCCD) hoặc 10/13 số (MST)'; h.className = 'hintline bad'; }
     var hasContract = state.files.some(function (f) { return f.kind === 'hopdong'; });
     var cn = $('contractNote');
-    if (a >= CONTRACT_MIN) {
+    if (isArc()) { cn.textContent = 'Đính kèm chứng từ cần lưu (bắt buộc ít nhất 1 file): hóa đơn, hợp đồng, ảnh chuyển khoản…'; cn.style.color = ''; }
+    else if (a >= CONTRACT_MIN) {
       cn.textContent = hasContract ? 'Đã có hợp đồng/chứng từ.' : 'Từ ' + fmtMoney(CONTRACT_MIN) + 'đ trở lên cần hợp đồng. Nếu chưa có, sổ sẽ ghi "Cần bổ sung hợp đồng", bạn gửi bổ sung sau cũng được.';
       cn.style.color = hasContract ? 'var(--ok)' : 'var(--warn)';
     } else { cn.textContent = 'Đính kèm hợp đồng, bill, CCCD, ảnh STK nếu có.'; cn.style.color = ''; }
@@ -425,6 +544,7 @@
   function collect() {
     var o = { hinh_thuc: state.hinh_thuc };
     FIELDS.forEach(function (id) { o[id] = $(id).value.trim(); });
+    o.ngay = $('ngay').value;
     o.so_tien = amount();
     o.cccd_mst = digits(o.cccd_mst);
     o.stk = digits(o.stk);
@@ -437,7 +557,10 @@
     if (!o.so_tien) return 'Nhập số tiền';
     if (!o.ben_nhan) return 'Nhập người nhận / công ty';
     if (o.cccd_mst && [10, 12, 13].indexOf(o.cccd_mst.length) < 0) return 'CCCD phải 12 số, MST 10 hoặc 13 số';
-    if (o.hinh_thuc === 'CK' && (!o.stk || !o.ngan_hang)) return 'Chuyển khoản cần số tài khoản và ngân hàng';
+    if (isArc()) {
+      if (!o.ngay) return 'Chọn ngày chứng từ';
+      if (!state.files.length) return 'Lưu trữ cần đính kèm ít nhất 1 file';
+    } else if (o.hinh_thuc === 'CK' && (!o.stk || !o.ngan_hang)) return 'Chuyển khoản cần số tài khoản và ngân hàng';
     var total = state.files.reduce(function (s, f) { return s + f.dataUrl.length; }, 0);
     if (total > MAX_TOTAL_B64) return 'Tổng dung lượng file quá lớn, hãy bớt file';
     return '';
@@ -446,15 +569,28 @@
   // ---------- chuyển bước ----------
   function go(step) {
     state.step = step;
+    $('stepHome').classList.toggle('hide', step !== 'home');
     $('stepForm').classList.toggle('hide', step !== 'form');
     $('stepSum').classList.toggle('hide', step !== 'sum');
     $('stepDone').classList.toggle('hide', step !== 'done');
-    $('bar').classList.toggle('hide', step === 'done');
+    $('bar').classList.toggle('hide', step === 'done' || step === 'home');
     $('btnBack').classList.toggle('hide', step !== 'sum');
-    $('btnNext').textContent = step === 'sum' ? 'Gửi đề nghị' : 'Tiếp tục';
-    $('title').textContent = step === 'sum' ? 'Xác nhận' : 'Báo chi phí';
+    $('btnHome').classList.toggle('hide', step !== 'form');
+    $('btnNext').textContent = step === 'sum' ? (isArc() ? 'Lưu trữ' : 'Gửi đề nghị') : 'Tiếp tục';
+    $('title').textContent = step === 'home' ? 'Chứng từ chi phí' : step === 'sum' ? 'Xác nhận' : step === 'done' ? '' : (isArc() ? 'Lưu trữ chứng từ' : 'Tạo lệnh chi');
     window.scrollTo(0, 0);
   }
+  function setMode(m) {
+    state.mode = m;
+    $('archiveBox').classList.toggle('hide', m !== 'archive');
+    if (m === 'archive' && !$('ngay').value) $('ngay').value = todayIso();
+    refreshHints();
+    go('form');
+  }
+  $('ngay').addEventListener('input', function () { $('ngay').dataset.touched = '1'; });
+  $('pickCreate').onclick = function () { setMode('create'); };
+  $('pickArchive').onclick = function () { setMode('archive'); };
+  $('btnHome').onclick = function () { showError(''); go('home'); };
   function row(dl, k, v) {
     if (v === '' || v === undefined) return;
     var dt = document.createElement('dt'); dt.textContent = k;
@@ -465,16 +601,20 @@
     $('sumAmount').textContent = fmtMoney(o.so_tien) + ' đ';
     var dl = $('sumList'); dl.innerHTML = '';
     row(dl, 'Bằng chữ', readWords(o.so_tien));
+    if (isArc()) { row(dl, 'Ngày chứng từ', o.ngay.split('-').reverse().join('/')); row(dl, 'Ghi chú', o.ghi_chu); }
     row(dl, 'Loại', o.loai);
     row(dl, 'Nội dung', o.noi_dung);
     row(dl, 'Người nhận', o.ben_nhan);
     row(dl, 'CCCD / MST', o.cccd_mst ? o.cccd_mst + ' – ' + idKind(o.cccd_mst) : 'Không có');
     row(dl, 'Số HĐ', o.so_hop_dong);
     row(dl, 'Hình thức', o.hinh_thuc === 'CK' ? 'Chuyển khoản' : 'Tiền mặt');
-    if (o.hinh_thuc === 'CK') { row(dl, 'STK', o.stk); row(dl, 'Ngân hàng', o.ngan_hang); }
+    if (o.hinh_thuc === 'CK' && (o.stk || o.ngan_hang)) { row(dl, 'STK', o.stk); row(dl, 'Ngân hàng', o.ngan_hang); }
     var kinds = {};
     state.files.forEach(function (f) { kinds[KIND_LABEL[f.kind]] = (kinds[KIND_LABEL[f.kind]] || 0) + 1; });
-    if (o.so_tien >= CONTRACT_MIN && !o.so_hop_dong && !state.files.some(function (f) { return f.kind === 'hopdong'; })) row(dl, 'Lưu ý', 'Chưa có hợp đồng, sổ sẽ ghi "Cần bổ sung hợp đồng"');
+    if (!isArc() && o.so_tien >= CONTRACT_MIN && !o.so_hop_dong && !state.files.some(function (f) { return f.kind === 'hopdong'; })) row(dl, 'Lưu ý', 'Chưa có hợp đồng, sổ sẽ ghi "Cần bổ sung hợp đồng"');
+    $('sumNote').textContent = isArc()
+      ? 'Chứng từ được ghi thẳng vào sổ với trạng thái "Lưu trữ" và lưu vào Drive, không đăng vào group.'
+      : 'Sau khi gửi, lệnh chi được đăng vào group Telegram và kế toán được tag để chi. Hãy chắc chắn thông tin và số tài khoản đúng.';
     row(dl, 'Đính kèm', Object.keys(kinds).map(function (k) { return k + ' ×' + kinds[k]; }).join(', ') || 'Không có');
   }
 
@@ -488,25 +628,27 @@
     }
     if (state.step === 'sum') {
       $('btnNext').disabled = true;
-      busy(true, 'Đang gửi… (tạo thư mục, lệnh chi, gửi duyệt – có thể mất ~20 giây)');
+      busy(true, isArc() ? 'Đang lưu… (tạo thư mục, tải file – có thể mất ~15 giây)' : 'Đang gửi… (tạo thư mục, lệnh chi, đăng group – có thể mất ~20 giây)');
       try {
         var payload = {
           loai: o.loai, noi_dung: o.noi_dung, ben_nhan: o.ben_nhan, cccd_mst: o.cccd_mst,
           so_tien: o.so_tien, hinh_thuc: o.hinh_thuc, stk: o.stk, ngan_hang: o.ngan_hang,
-          so_hop_dong: o.so_hop_dong,
+          so_hop_dong: o.so_hop_dong, mode: state.mode, ngay: o.ngay, ghi_chu: o.ghi_chu,
           files: state.files.map(function (f) {
             return { kind: f.kind, name: f.name, mime: f.mime, data: f.dataUrl.replace(/^data:[^,]*,/, '') };
           })
         };
         var res = await api('expense-create', payload);
         $('doneCp').textContent = res.ma_cp || '';
+        $('doneTitle').textContent = isArc() ? 'Đã lưu trữ chứng từ' : 'Đã gửi đề nghị';
+        $('doneNote').textContent = isArc() ? 'Đã ghi vào sổ (trạng thái Lưu trữ) và lưu file vào Drive.' : 'Lệnh chi đã được đăng vào group Telegram, kế toán đã được tag.';
         var a = $('doneFolder');
         if (res.folder_url) { a.href = res.folder_url; a.classList.remove('hide'); } else { a.classList.add('hide'); }
         if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
         go('done');
       } catch (e) {
         if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
-        showError('Gửi không được: ' + e.message);
+        showError((isArc() ? 'Lưu không được: ' : 'Gửi không được: ') + e.message);
       } finally { busy(false); $('btnNext').disabled = false; }
     }
   };
@@ -516,12 +658,14 @@
   };
   $('again').onclick = function () {
     FIELDS.forEach(function (id) { $(id).value = ''; $(id).classList.remove('ocr-filled'); });
-    state.files = []; state.dirty = {}; renderFiles(); setHinhThuc('CK');
-    $('warns').innerHTML = ''; refreshHints(); go('form');
+    $('ngay').value = ''; delete $('ngay').dataset.touched;
+    state.files = []; state.dirty = {}; state.mode = ''; renderFiles(); setHinhThuc('CK');
+    $('warns').innerHTML = ''; $('archiveBox').classList.add('hide'); refreshHints(); go('home');
   };
 
   if (!INIT) showError('Hãy mở trang này từ nút menu của bot Telegram (không mở trực tiếp bằng trình duyệt).');
   refreshHints();
+  go('home');
 })();
 </script>
 </body>
