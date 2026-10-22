@@ -81,6 +81,10 @@
   .menu button b { display: block; font-size: 17px; margin-bottom: 4px; }
   .menu button span { color: var(--hint); font-size: 13px; }
   .menu button .ico { font-size: 26px; display: block; margin-bottom: 6px; }
+  .scanbtn { display: block; width: 100%; text-align: left; border: 1px dashed var(--btn); color: var(--fg); background: transparent; border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; font: inherit; }
+  .scanbtn b { display: block; color: var(--btn); font-size: 14px; }
+  .scanbtn span { display: block; color: var(--hint); font-size: 12.5px; margin-top: 2px; }
+  .warnbox { background: color-mix(in srgb, var(--warn) 14%, var(--bg)); color: var(--fg); border-radius: 10px; padding: 9px 12px; font-size: 13px; margin-bottom: 10px; }
   .back { border: 0; background: transparent; color: var(--link); font: inherit; padding: 0 0 6px; }
 </style>
 </head>
@@ -106,13 +110,10 @@
       <textarea id="ghi_chu" placeholder="VD: Chứng từ chi tháng 9, đã chuyển khoản trước đó"></textarea>
     </div>
     <div class="card">
-      <h2>Quét tự điền</h2>
-      <div class="scan">
-        <button id="scanBank" type="button">🏦 STK / QR / giấy báo CK</button>
-        <button id="scanBill" type="button">🧾 Bill / hóa đơn</button>
-        <button id="scanCccd" type="button">🪪 CCCD</button>
-      </div>
-      <div class="note">Chụp hoặc chọn ảnh, PDF hoặc file Word (.docx). Nút ngân hàng đọc được cả giấy báo / chứng từ chuyển khoản (lấy người thụ hưởng, tài khoản có, ngân hàng, số tiền, ngày). Hệ thống đọc và điền Người nhận / Công ty, CCCD / MST, STK… Luôn kiểm tra lại trước khi gửi.</div>
+      <h2>Tải chứng từ & quét tự điền</h2>
+      <div class="warnbox">⚠️ Vui lòng chọn đúng tài liệu trong từng ô quét (ví dụ ảnh hợp đồng chọn ở ô Hợp đồng) để hệ thống đọc đúng và tick đúng cột trong sổ.</div>
+      <div id="scanBtns"></div>
+      <div class="note">Chọn ảnh, PDF hoặc file Word (.docx). File được lưu kèm khoản chi, thông tin đọc được điền vào form. Luôn kiểm tra lại trước khi gửi.</div>
       <div id="warns" class="warns"></div>
     </div>
 
@@ -162,14 +163,11 @@
     </div>
 
     <div class="card">
-      <h2>Chứng từ đính kèm</h2>
+      <h2>File đã đính kèm</h2>
       <div id="contractNote" class="note" style="margin:0 0 8px"></div>
       <div class="files" id="fileList"></div>
       <div class="scan" style="margin-top:8px">
-        <button type="button" class="addfile" data-kind="hopdong">+ Hợp đồng / bill</button>
-        <button type="button" class="addfile" data-kind="cccd">+ CCCD</button>
-        <button type="button" class="addfile" data-kind="stk">+ Ảnh STK</button>
-        <button type="button" class="addfile" data-kind="khac">+ Chứng từ khác</button>
+        <button type="button" class="addfile" data-kind="khac">+ Chứng từ khác (không quét)</button>
       </div>
     </div>
   </div>
@@ -214,7 +212,22 @@
   var INIT = tg ? tg.initData : '';
   var CONTRACT_MIN = 5000000;          // chỉ để nhắc (từ mức này trở lên cần hợp đồng); n8n ghi sổ
   var MAX_TOTAL_B64 = 3900000;         // giới hạn body Vercel ~4.5MB
-  var KIND_LABEL = { hopdong: 'Hợp đồng / bill', cccd: 'CCCD', stk: 'Ảnh STK', khac: 'Chứng từ khác' };
+  var KIND_LABEL = { hopdong: 'Hợp đồng', cccd: 'CCCD', stk: 'Ảnh STK', khac: 'Chứng từ khác', bill: 'Bill', unc: 'Chứng từ CK', mst: 'Giấy tờ công ty' };
+  var SCANS = {
+    create: [
+      { icon: '🏦', title: 'Tài khoản ngân hàng / QR', sub: 'Điền STK, ngân hàng (tên chủ TK nếu chưa có người nhận)', ocr: 'bank', attach: 'stk', fill: ['stk', 'ngan_hang'], fillEmpty: ['ben_nhan'] },
+      { icon: '🏢', title: 'Thông tin công ty (MST, tên công ty)', sub: 'Điền Người nhận / Công ty và MST', ocr: 'bill', attach: 'mst', fill: ['ben_nhan', 'cccd_mst'], fillEmpty: [] },
+      { icon: '🪪', title: 'CCCD cá nhân', sub: 'Điền họ tên và số CCCD', ocr: 'cccd', attach: 'cccd', fill: ['ben_nhan', 'cccd_mst'], fillEmpty: [] },
+      { icon: '🧾', title: 'Bill / hóa đơn', sub: 'Điền số tiền', ocr: 'bill', attach: 'bill', fill: ['so_tien'], fillEmpty: [] },
+      { icon: '📑', title: 'Hợp đồng', sub: 'Điền số hợp đồng, tick "Hợp đồng" trong sổ', ocr: 'contract', attach: 'hopdong', fill: ['so_hop_dong'], fillEmpty: [] }
+    ],
+    archive: [
+      { icon: '🏦', title: 'Chứng từ chuyển khoản', sub: 'Điền ngày, số tiền, tên người nhận, STK, ngân hàng', ocr: 'bank', attach: 'unc', fill: ['ngay', 'so_tien', 'ben_nhan', 'stk', 'ngan_hang'], fillEmpty: [] },
+      { icon: '🧾', title: 'Bill / hóa đơn', sub: 'Lưu bill, điền số tiền nếu còn trống', ocr: 'bill', attach: 'bill', fill: [], fillEmpty: ['so_tien'] },
+      { icon: '📑', title: 'Hợp đồng', sub: 'Điền số hợp đồng, tick "Hợp đồng" trong sổ', ocr: 'contract', attach: 'hopdong', fill: ['so_hop_dong'], fillEmpty: [] }
+    ]
+  };
+  var scanSpec = null;
   var PDFJS = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
   var PDFJS_WORKER = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
   var JSZIP = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
@@ -391,44 +404,49 @@
   }
 
   // ---------- OCR ----------
-  var scanKind = '';
-  function startScan(kind) { scanKind = kind; var p = $('pickScan'); p.value = ''; p.click(); }
-  $('scanBank').onclick = function () { startScan('bank'); };
-  $('scanBill').onclick = function () { startScan('bill'); };
-  $('scanCccd').onclick = function () { startScan('cccd'); };
+  function renderScans() {
+    var box = $('scanBtns'); box.innerHTML = '';
+    (SCANS[state.mode] || []).forEach(function (sp) {
+      var b = document.createElement('button'); b.type = 'button'; b.className = 'scanbtn';
+      var t = document.createElement('b'); t.textContent = sp.icon + ' ' + sp.title;
+      var d = document.createElement('span'); d.textContent = sp.sub;
+      b.appendChild(t); b.appendChild(d);
+      b.onclick = function () { scanSpec = sp; var p = $('pickScan'); p.value = ''; p.click(); };
+      box.appendChild(b);
+    });
+  }
 
   $('pickScan').onchange = async function (ev) {
     var f = ev.target.files && ev.target.files[0];
-    if (!f) return;
-    var kind = scanKind, mime = fileMime(f);
-    var attachKind = kind === 'bank' ? 'stk' : kind === 'cccd' ? 'cccd' : 'hopdong';
-    showError('');
+    if (!f || !scanSpec) return;
+    var sp = scanSpec, mime = fileMime(f), kind = sp.ocr;
+    showError(''); $('warns').innerHTML = '';
     busy(true, 'Đang đọc file…');
     try {
-      if (mime === 'application/msword') throw new Error('File .doc cũ chưa đọc được, hãy lưu thành .docx hoặc PDF rồi chọn lại');
-      var res, attach = null;
+      var attach = null, extra = [];
+      if (isDoc(mime)) {
+        if (f.size <= MAX_FILE) attach = { data: await fileToDataUrl(f), mime: mime };
+        else extra.push('File "' + f.name + '" quá lớn (tối đa ~2.5MB) nên chưa được đính kèm');
+      } else {
+        attach = { data: await compress(f, 600000, 1400), mime: 'image/jpeg' };
+      }
+      if (attach) addFile(sp.attach, attach.data, attach.mime, f.name);
+      if (mime === 'application/msword') throw new Error('File .doc cũ chưa đọc được (đã đính kèm), hãy nhập tay hoặc lưu thành .docx / PDF');
+      var res;
       if (mime === 'application/pdf') {
         var px = await pdfExtract(f);
-        if (px.text.replace(/\s/g, '').length >= 40) {
-          res = await api('expense-ocr', { kind: kind, text: px.text });
-        } else {
-          res = await api('expense-ocr', { kind: kind, image: await pdfToJpeg(px.pdf, 900000) });
-        }
-        if (f.size <= MAX_FILE) attach = { data: await fileToDataUrl(f), mime: mime };
+        if (px.text.replace(/\s/g, '').length >= 40) res = await api('expense-ocr', { kind: kind, text: px.text });
+        else res = await api('expense-ocr', { kind: kind, image: await pdfToJpeg(px.pdf, 900000) });
       } else if (mime.indexOf('wordprocessingml') >= 0) {
         var t = await docxText(f);
         if (t.replace(/\s/g, '').length < 10) throw new Error('File Word không có chữ để đọc');
         res = await api('expense-ocr', { kind: kind, text: t });
-        if (f.size <= MAX_FILE) attach = { data: await fileToDataUrl(f), mime: mime };
       } else {
-        var dataUrl = await compress(f, 900000, 1800);   // OCR.space free: ≤ 1MB
-        res = await api('expense-ocr', { kind: kind, image: dataUrl });
-        attach = { data: await compress(f, 600000, 1400), mime: 'image/jpeg' };
+        res = await api('expense-ocr', { kind: kind, image: await compress(f, 900000, 1800) });   // OCR.space free: ≤ 1MB
       }
-      applyOcr(res);
-      if (attach) addFile(attachKind, attach.data, attach.mime, f.name);
+      applyOcr(res, sp, extra);
     } catch (e) {
-      showError('Quét lỗi: ' + e.message + '. Bạn có thể nhập tay.');
+      showError('Quét lỗi: ' + e.message + '. File vẫn được đính kèm, bạn có thể nhập tay.');
     } finally { busy(false); }
   };
 
@@ -440,17 +458,19 @@
     el.classList.add('ocr-filled');
     return true;
   }
-  function applyOcr(res) {
-    var f = (res && res.fields) || {};
-    var n = 0;
-    ['ben_nhan', 'cccd_mst', 'so_tien', 'so_hop_dong', 'stk', 'ngan_hang'].forEach(function (k) {
+  function applyOcr(res, sp, extra) {
+    var f = (res && res.fields) || {}, n = 0;
+    (sp.fill || []).forEach(function (k) {
+      if (k === 'ngay') { if (f.ngay && !$('ngay').dataset.touched) { $('ngay').value = f.ngay; n++; } return; }
       if (setField(k, f[k])) n++;
     });
-    if (isArc() && f.ngay && !$('ngay').dataset.touched) { $('ngay').value = f.ngay; n++; }
-    if ((f.stk || f.ngan_hang) && state.hinh_thuc !== 'CK') setHinhThuc('CK');
+    (sp.fillEmpty || []).forEach(function (k) {
+      if (!$(k).value.trim() && setField(k, f[k])) n++;
+    });
+    if ((sp.fill || []).indexOf('stk') >= 0 && (f.stk || f.ngan_hang) && state.hinh_thuc !== 'CK') setHinhThuc('CK');
     var w = $('warns'); w.innerHTML = '';
-    (res.warnings || []).forEach(function (t) { var d = document.createElement('div'); d.textContent = '⚠ ' + t; w.appendChild(d); });
-    if (!n && !(res.warnings || []).length) showError('Không đọc được thông tin nào, hãy nhập tay');
+    (extra || []).concat(res.warnings || []).forEach(function (t) { var d = document.createElement('div'); d.textContent = '⚠ ' + t; w.appendChild(d); });
+    if (!n) showError('Không đọc được thông tin nào ở tài liệu này (file vẫn được đính kèm). Kiểm tra đã chọn đúng ô quét chưa, hoặc nhập tay.');
     refreshHints();
   }
 
@@ -584,7 +604,7 @@
     state.mode = m;
     $('archiveBox').classList.toggle('hide', m !== 'archive');
     if (m === 'archive' && !$('ngay').value) $('ngay').value = todayIso();
-    refreshHints();
+    renderScans(); refreshHints();
     go('form');
   }
   $('ngay').addEventListener('input', function () { $('ngay').dataset.touched = '1'; });
